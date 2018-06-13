@@ -73,7 +73,7 @@ def kafkaCall():
         print('inside loop')
         if consumer:
             for msg in consumer:
-                # data = eval(msg.value)
+                msg = eval(msg.value)
                 # print ('data',data)
                 # print ('got data')
                 action = msg.get('guestStatus', '')
