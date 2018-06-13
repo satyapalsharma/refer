@@ -20,7 +20,9 @@ db_settings = {
     "DB_NAME": "FabHotels"
 }
 
-POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+
+POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
 dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)

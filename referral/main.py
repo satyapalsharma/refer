@@ -7,7 +7,9 @@ import pymysql
 import pymysql.cursors
 import requests
 
-POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+
+POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
 app = Sanic()
 
