@@ -11,11 +11,18 @@ POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
 app = Sanic()
 
+# db_settings = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "root",
+#     "DB_PASS": "Yamyanyo2??",
+#     "DB_NAME": "referral"
+# }
+
 db_settings = {
     "DB_HOST": "localhost",
-    "DB_USER": "root",
-    "DB_PASS": "Yamyanyo2??",
-    "DB_NAME": "referral"
+    "DB_USER": "fabDev",
+    "DB_PASS": "Fab@1962",
+    "DB_NAME": "FabHotels"
 }
 
 TRANSACTION_TYPE = {
@@ -111,6 +118,7 @@ async def getOrGeneratCode(request):
     name = request.json.get('name', '')
     uuid = request.json.get('uuid', '')
     mobileVerified = request.json.get('mobileVerified', 1)
+    print(request.json)
 
     if uuid:
         with dbRead.cursor() as cursor:
@@ -129,7 +137,8 @@ async def getOrGeneratCode(request):
 
         with dbWrite.cursor() as readCursor:
             try:
-                sql = "INSERT INTO `referral_mapping` (UUID, CODE) VALUES ('{0}', '{1}')".format(uuid, code)
+                sql = "INSERT INTO `referral_mapping` (UUID, CODE, MOBILE_VERIFIED) VALUES ('{0}', '{1}', {2})".format(uuid, code, mobileVerified)
+                print(sql)
                 readCursor.execute(sql)
             except :
                 print('Errpr:')
