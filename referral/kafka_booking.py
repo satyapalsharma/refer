@@ -66,7 +66,8 @@ def kafkaCall():
     print ('inside kafka call')
 
     #creating kafka consumer
-    consumer = KafkaConsumer('bookingpoints',bootstrap_servers='13.127.227.239:9092', auto_offset_reset='earliest')
+    # consumer = KafkaConsumer('bookingpoints',bootstrap_servers='13.127.227.239:9092', auto_offset_reset='earliest')
+    consumer = KafkaConsumer('bookingpoints',bootstrap_servers='172.31.21.241:9092', auto_offset_reset='earliest')
     print(consumer)
     while(True):
         print('inside loop')
