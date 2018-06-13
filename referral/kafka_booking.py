@@ -37,11 +37,12 @@ def get_points_plan_object():
         ret = {}
         for row in result:
             ret[row['event']] = row
-        POINTS_PLAN_OBJECT = ret
         return ret
 
+POINTS_PLAN_OBJECT = get_points_plan_object()
 
-maxBonusCountByReferrer = get_points_plan_object().get('MaxReferralLimit', {}).get('points', 0)
+
+maxBonusCountByReferrer = POINTS_PLAN_OBJECT.get('MaxReferralLimit', {}).get('points', 0)
 
 
 dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
