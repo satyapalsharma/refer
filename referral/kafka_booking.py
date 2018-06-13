@@ -28,17 +28,13 @@ dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"
 dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
 def convert_transaction_type(payload):
-    payload = [
-        "298e265a-3192-41e8-87c5-b3b1b029baab"
-    ]
     headers ={'content-type': "application/json"}
     url = POINTS_SERVICE_URL+ "/fabpoints/admin/pointsservice/referral/realisedcredit"
     response = requests.request('POST', url, data=str(json.dumps(payload)),headers=headers)
     responseJson = response.json()
     responseStatus = responseJson.get('status', False)
     if responseStatus:
-        # responseData = responseJson.get('data', False)
-        responseData = {'38de4723-11b6-4179-b2df-1f2d02d104b1': True, 'af71d65d-9025-41cf-9505-fc771eeb37f6': True}
+        responseData = responseJson.get('data', False)
         print(responseJson)
         print(responseData)
         for transactionId in responseData:
