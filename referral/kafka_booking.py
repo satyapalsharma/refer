@@ -93,14 +93,14 @@ def kafkaCall():
                             referrarResult = readCursor.fetchone()
                             referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
                             if referrarMobileVerified:
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where ID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0  ".format(userId)
+                                sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0  ".format(referrarUuid)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchone()
                                 if result:
                                     payload = [result.get('TRANSACTION_ID')]
                                     convert_transaction_type(payload)
                             with dbWrite.cursor() as writeCursor:
-                                sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where TRANSACTION_ID='{}'".format(transactionId)
+                                sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
                                 print(sql)
                                 writeCursor.execute(sql)
                                 
