@@ -85,59 +85,12 @@ def kafkaCall():
 
     #creating kafka consumer
     # consumer = KafkaConsumer('bookingpoints',bootstrap_servers='13.127.227.239:9092', auto_offset_reset='earliest')
-    consumer = KafkaConsumer('bookingpoints',bootstrap_servers='172.31.21.241:9092', auto_offset_reset='earliest')
+    consumer = KafkaConsumer('user',bootstrap_servers='172.31.21.241:9092', auto_offset_reset='earliest')
     print(consumer)
     while(True):
         print('inside loop')
         if consumer:
             for msg in consumer:
                 msg = eval(msg.value)
-                # print ('data',data)
-                # print ('got data')
-                action = msg.get('guestStatus', '')
-                uuid = msg.get('userId', '')
-                if action=='CHECKOUT':
-                    with dbRead.cursor() as readCursor:
-                        sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where UUID='{0}'".format(uuid)
-                        readCursor.execute(sql)
-                        result = readCursor.fetchone()
-                        if result:
-                            referrarUuid = result.get('REFERRAR_UUID', '')
-                            userId = result.get('ID', 0)
-                            sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{0}'".format(referrarUuid)
-                            readCursor.execute(sql)
-                            referrarResult = readCursor.fetchone()
-                            referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
-                            if referrarMobileVerified:
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
-                                readCursor.execute(sql)
-                                result = readCursor.fetchone()
-
-                                sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
-                                readCursor.execute(sql)
-                                bonusCount = readCursor.fetchone()
-                                recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-                                print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
-                                if result & (recivedBonusCountByReferrer < maxBonusCountByReferrer):
-                                    payload = [result.get('TRANSACTION_ID')]
-                                    convert_transaction_type(payload)
-                            with dbWrite.cursor() as writeCursor:
-                                sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
-                                print(sql)
-                                writeCursor.execute(sql)
-                                
-                        else:
-                            print('this uuid is not in the referral system')
-    consumer.close()
-    
-                
-            
-
-
-kafkaCall()
-
-# def run():
-#     run_thread = Thread(target=kafkaCall())
-#     run_thread.daemon = True
-#     run_thread.start()
-#     time.sleep(20)
+                print ('data',msg)
+                print ('got data')
