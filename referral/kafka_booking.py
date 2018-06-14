@@ -108,7 +108,7 @@ def kafkaCall():
                             readCursor.execute(sql)
                             referrarResult = readCursor.fetchone()
                             referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
-                            if referrarMobileVerified:
+                            if bool(ord(referrarMobileVerified)):
                                 sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchone()

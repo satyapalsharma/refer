@@ -104,7 +104,7 @@ def kafkaCall():
                         readCursor.execute(sql)
                         result = readCursor.fetchone()
 
-                        userMobileStatusDb = result.get('MOBILE_VERIFIED', False)
+                        userMobileStatusDb = bool(ord(result.get('MOBILE_VERIFIED', False)))
                         userReferralMappingId = result.get('ID', False)
 
                         if userMobileStatusKafka == userMobileStatusDb:
