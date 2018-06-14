@@ -107,26 +107,27 @@ def kafkaCall():
                             sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{0}'".format(referrarUuid)
                             readCursor.execute(sql)
                             referrarResult = readCursor.fetchone()
-                            referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
-                            if bool(ord(referrarMobileVerified)):
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
-                                readCursor.execute(sql)
-                                result = readCursor.fetchone()
+                            if referrarResult:
+                                referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
+                                if bool(ord(referrarMobileVerified)):
+                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
+                                    readCursor.execute(sql)
+                                    result = readCursor.fetchone()
 
-                                sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
-                                readCursor.execute(sql)
-                                bonusCount = readCursor.fetchone()
-                                recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-                                print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
-                                if result:
-                                    if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
-                                        payload = [result.get('TRANSACTION_ID')]
-                                        convert_transaction_type(payload)
-                            with dbWrite.cursor() as writeCursor:
-                                sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
-                                print(sql)
-                                writeCursor.execute(sql)
-                                
+                                    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
+                                    readCursor.execute(sql)
+                                    bonusCount = readCursor.fetchone()
+                                    recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+                                    print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+                                    if result:
+                                        if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
+                                            payload = [result.get('TRANSACTION_ID')]
+                                            convert_transaction_type(payload)
+                                with dbWrite.cursor() as writeCursor:
+                                    sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
+                                    print(sql)
+                                    writeCursor.execute(sql)
+                                    
                         else:
                             print('this uuid is not in the referral system')
     consumer.close()
