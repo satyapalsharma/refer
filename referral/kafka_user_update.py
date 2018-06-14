@@ -122,7 +122,7 @@ def kafkaCall():
                                 
                                 print(idList)
 
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ('{0}') AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
+                                sql = "SELECT TRANSACTION_ID FROM `transactions` where TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ({0}) AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
                                 print(sql)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchall()
