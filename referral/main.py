@@ -196,6 +196,23 @@ async def getUuidFromReferralCode(request):
     else:
         return json(create_response(message='referral code not provided'))
 
+@app.route("/get/mappingid", methods=['POST'])
+async def getUserDetailsFromMappingId(request):
+
+    idList = request.json.get('idList', '')
+
+    if idList:
+        with dbRead.cursor() as cursor:
+            sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            if result:
+                return json(create_response(True, result))
+            else:
+                return json(create_response(message='details not found for provided ID'))
+    else:
+        return json(create_response(message='Id list not provided'))
+
 @app.route("/check/code", methods=['POST'])
 async def isValidReferralCode(request):
 
