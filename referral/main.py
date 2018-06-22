@@ -215,11 +215,13 @@ async def getReferralCodeFromUuid(request):
         with dbRead.cursor() as cursor:
             if type(uuid) is list:
                 sql = "SELECT CODE FROM `referral_mapping` where UUID in ('{0}')".format("', '".join(str(ids) for ids in uuid))
+                print(sql)
                 cursor.execute(sql)
                 result = cursor.fetchall()
             elif type(uuid) is str:
-                sql = "SELECT CODE FROM `referral_mapping` where UUID='%s'"
-                cursor.execute(sql, uuid)
+                sql = "SELECT CODE FROM `referral_mapping` where UUID='{0}'".format(uuid)
+                print(sql)
+                cursor.execute(sql)
                 result = cursor.fetchone()
             else:
                 return json(create_response(message='I can not understand what you are trying to fetch'))
