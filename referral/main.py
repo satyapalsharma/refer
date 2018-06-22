@@ -57,6 +57,8 @@ def get_points_plan_object():
 
 POINTS_PLAN_OBJECT = get_points_plan_object()
 
+maxBonusCountByReferrer = POINTS_PLAN_OBJECT.get('MaxReferralLimit', {}).get('points', 0) 
+
 def commit_transaction(responseData, referralMappingId, uuid, creditType):
     print(responseData)
     transactionId = responseData.get('transactionId', '')
@@ -249,6 +251,14 @@ async def addReferral(request):
                     if referrerUuid == uuid:
                         return json(create_response(message='You can\'t refer yourself'))
                     else:
+                        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
+                        readCursor.execute(sql)
+                        bonusCount = readCursor.fetchone()
+                        recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+                        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+                        if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
+                            return json(create_response(message='the user has crossed it\'s limits'))
+
                         sql = "SELECT ID, UUID, CODE, REFERRAR_UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{}'".format(uuid)
                         readCursor.execute(sql)
                         oldData = readCursor.fetchone()
