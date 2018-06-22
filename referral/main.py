@@ -213,11 +213,13 @@ async def getUserDetailsFromMappingId(request):
 
     if idList:
         with dbRead.cursor() as cursor:
-            sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT, CODE FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
-            cursor.execute(sql)
             if type(idList) is list:
+                sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT, CODE FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
+                cursor.execute(sql)
                 result = cursor.fetchall()
-            elif type(idList) is list:
+            elif type(idList) is int:
+                sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT, CODE FROM `referral_mapping` where ID = ({0})".format(idList)
+                cursor.execute(sql)
                 result = cursor.fetchone()
             else:
                 return json(create_response(message='Sorry I can\'t understand the data you requested'))
