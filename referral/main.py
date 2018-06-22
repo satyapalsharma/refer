@@ -110,11 +110,12 @@ def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O",
     return unique_code
 
 def should_user_get_referral_bonus(referrerUuid=''):
-    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
-    readCursor.execute(sql)
-    bonusCount = readCursor.fetchone()
-    recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-    print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+    with dbRead.cursor() as readCursor:
+        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
+        readCursor.execute(sql)
+        bonusCount = readCursor.fetchone()
+        recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
     return (recivedBonusCountByReferrer < maxBonusCountByReferrer)
 
 def create_response(success=False, data={}, message=''):
@@ -229,9 +230,9 @@ async def getReferralCodeFromUuid(request):
             if result:
                 return json(create_response(True, result))
             else:
-                return json(create_response(message='referral code not found'))
+                return json(create_response(message='uuid not found'))
     else:
-        return json(create_response(message='referral code not provided'))
+        return json(create_response(message='uuid not provided'))
 
 
 @app.route("/get/event_detail", methods=['POST'])
