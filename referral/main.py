@@ -203,13 +203,13 @@ async def getUserDetailsFromMappingId(request):
 
     if idList:
         with dbRead.cursor() as cursor:
-            sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
+            sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT, CODE FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
             cursor.execute(sql)
             result = cursor.fetchall()
             if result:
                 return json(create_response(True, result))
             else:
-                return json(create_response(message='details not found for provided ID'))
+                return json(create_response(message='details not found for provided IDs'))
     else:
         return json(create_response(message='Id list not provided'))
 
@@ -317,4 +317,4 @@ async def addReferral(request):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, worker=4)
