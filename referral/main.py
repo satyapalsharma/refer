@@ -251,7 +251,7 @@ async def addReferral(request):
                     if referrerUuid == uuid:
                         return json(create_response(message='You can\'t refer yourself'))
                     else:
-                        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
+                        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
                         readCursor.execute(sql)
                         bonusCount = readCursor.fetchone()
                         recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
