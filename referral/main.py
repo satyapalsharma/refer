@@ -206,6 +206,32 @@ async def getUuidFromReferralCode(request):
     else:
         return json(create_response(message='referral code not provided'))
 
+@app.route("/get/code", methods=['POST'])
+async def getReferralCodeFromUuid(request):
+
+    uuid = request.json.get('uuid', '')
+
+    if uuid:
+        with dbRead.cursor() as cursor:
+            if type(uuid) is list:
+                sql = "SELECT CODE FROM `referral_mapping` where UUID in ('{0}')".format("', '".join(str(ids) for ids in uuid))
+                cursor.execute(sql)
+                result = cursor.fetchall()
+            elif type(uuid) is str:
+                sql = "SELECT CODE FROM `referral_mapping` where UUID='%s'"
+                cursor.execute(sql, uuid)
+                result = cursor.fetchone()
+            else:
+                return json(create_response(message='I can not understand what you are trying to fetch'))
+
+            if result:
+                return json(create_response(True, result))
+            else:
+                return json(create_response(message='referral code not found'))
+    else:
+        return json(create_response(message='referral code not provided'))
+
+
 @app.route("/get/event_detail", methods=['POST'])
 async def getUserDetailsFromMappingId(request):
 
