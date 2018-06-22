@@ -65,11 +65,14 @@ def commit_transaction(responseData, referralMappingId, uuid, creditType):
     transactionType = TRANSACTION_TYPE.get(responseData.get('transactionType'))
     
     creditType = CREDIT_TYPE.get(creditType)
-    with dbWrite.cursor() as writeCursor:
-        sql = "INSERT INTO transactions (TRANSACTION_ID, TRANSACTION_TYPE, REFERRAL_MAPPING_ID, AFFECTED_USER_UUID, DISCOUNT_TYPE) VALUES ('{0}', {1}, {2}, '{3}', {4})".format(transactionId, transactionType, referralMappingId, uuid, creditType)
-        print(sql)
-        writeCursor.execute(sql)
-        result = writeCursor.fetchone()
+    try:
+        with dbWrite.cursor() as writeCursor:
+            sql = "INSERT INTO transactions (TRANSACTION_ID, TRANSACTION_TYPE, REFERRAL_MAPPING_ID, AFFECTED_USER_UUID, DISCOUNT_TYPE) VALUES ('{0}', {1}, {2}, '{3}', {4})".format(transactionId, transactionType, referralMappingId, uuid, creditType)
+            print(sql)
+            writeCursor.execute(sql)
+            result = writeCursor.fetchone()
+    except:
+        print ('Some error occured in commiting transaction. Probabally a duplicate entry')
 
 #Function to add credits in user's account
 def add_credit(uuid='', pointsType='Referral Points', sourceId=123, propertyId=645, creditType='UNREALISED'):
