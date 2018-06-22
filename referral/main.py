@@ -109,6 +109,14 @@ def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O",
                 break
     return unique_code
 
+def should_user_get_referral_bonus(referrerUuid=''):
+    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
+    readCursor.execute(sql)
+    bonusCount = readCursor.fetchone()
+    recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+    print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+    return (recivedBonusCountByReferrer < maxBonusCountByReferrer)
+
 def create_response(success=False, data={}, message=''):
     ret = {
         "success": success,
@@ -251,14 +259,6 @@ async def addReferral(request):
                     if referrerUuid == uuid:
                         return json(create_response(message='You can\'t refer yourself'))
                     else:
-                        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
-                        readCursor.execute(sql)
-                        bonusCount = readCursor.fetchone()
-                        recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-                        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
-                        if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
-                            return json(create_response(message='the user has crossed it\'s limits'))
-
                         sql = "SELECT ID, UUID, CODE, REFERRAR_UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{}'".format(uuid)
                         readCursor.execute(sql)
                         oldData = readCursor.fetchone()
@@ -273,17 +273,24 @@ async def addReferral(request):
                                     userTrans = add_credit(uuid, pointsType='Instant Referral Discount', sourceId=oldData.get('ID', 0), creditType='REALISED')
                                 else:
                                     userTrans = add_credit(uuid, pointsType='Instant Referral Discount', sourceId=oldData.get('ID', 0), creditType='UNREALISED')
-                                refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=oldData.get('ID', 0), creditType='UNREALISED')
+
+                                ##############  Handling of the senario where the referrer has already recived the maximum amount of bonus he should be allowed to recive ############## 
+                                refTrans = {}
+                                if should_user_get_referral_bonus(referrerUuid):
+                                    refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=oldData.get('ID', 0), creditType='UNREALISED')
         
-                                if userTrans.get('status', False) & refTrans.get('status', False):
+                                if userTrans.get('status', False):
                                     with dbWrite.cursor() as writeCursor:
-                                        sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=1 where UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
+                                        if refTrans.get('status', False):
+                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=1 where UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
+                                        else :
+                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=0 where UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
                                         print(sql)
                                         writeCursor.execute(sql)
                                         result = {
                                             "mobileVerified": mobileVerified,
-                                            "instant_discount_received": True,
-                                            "bonus_received": True,
+                                            "instant_discount_received": userTrans.get('status', False),
+                                            "bonus_received": refTrans.get('status', False),
                                             "code": oldData.get('CODE', '')
                                         }
                                         return json(create_response(True, result))
@@ -303,12 +310,22 @@ async def addReferral(request):
                                     userTrans = add_credit(uuid, pointsType='Instant Referral Discount', sourceId=insertId, creditType='REALISED')
                                 else:
                                     userTrans = add_credit(uuid, pointsType='Instant Referral Discount', sourceId=insertId, creditType='UNREALISED')
-                                refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=insertId, creditType='UNREALISED')
-                                if userTrans.get('status', False) & refTrans.get('status', False):
+
+                                ##############  Handling of the senario where the referrer has already recived the maximum amount of bonus he should be allowed to recive ############## 
+                                refTrans = {}
+                                if should_user_get_referral_bonus(referrerUuid) & userTrans.get('status', False):
+                                    refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=insertId, creditType='UNREALISED')
+
+                                if userTrans.get('status', False):
+                                    if refTrans.get('status', False):
+                                        with dbWrite.cursor() as writeCursor:
+                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID=0 where ID={0}".format(insertId)
+                                            print(sql)
+                                            writeCursor.execute(sql)
                                     result = {
                                         "mobileVerified": mobileVerified,
-                                        "instant_discount_received": True,
-                                        "bonus_received": True,
+                                        "instant_discount_received": userTrans.get('status', False),
+                                        "bonus_received": refTrans.get('status', False),
                                         "code": userCode
                                     }
                                     return json(create_response(True, result))
