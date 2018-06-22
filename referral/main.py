@@ -217,7 +217,7 @@ async def getUserDetailsFromMappingId(request):
             cursor.execute(sql)
             if type(idList) is list:
                 result = cursor.fetchall()
-            else if type(idList) is list:
+            elif type(idList) is list:
                 result = cursor.fetchone()
             else:
                 return json(create_response(message='Sorry I can\'t understand the data you requested'))
