@@ -211,6 +211,9 @@ async def getUserDetailsFromMappingId(request):
 
     idList = request.json.get('idList', '')
 
+    if type(idList) is not list:
+        return json(create_response(message='Request is not in the required format'))
+
     if idList:
         with dbRead.cursor() as cursor:
             sql = "SELECT ID, UUID, REFERRAR_UUID, MOBILE_VERIFIED, FIRST_CHECKOUT, CODE FROM `referral_mapping` where ID in ({0})".format(', '.join(str(ids) for ids in idList))
