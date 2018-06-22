@@ -255,7 +255,7 @@ async def addReferral(request):
                         readCursor.execute(sql)
                         bonusCount = readCursor.fetchone()
                         recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-                        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+                        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
                         if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
                             return json(create_response(message='the user has crossed it\'s limits'))
 
