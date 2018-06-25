@@ -359,7 +359,7 @@ async def addReferral(request):
                                 if userTrans.get('status', False):
                                     if refTrans.get('status', False):
                                         with dbWrite.cursor() as writeCursor:
-                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID=0 where ID={0}".format(insertId)
+                                            sql = "UPDATE `referral_mapping` SET REFERRAL_BONUS=0 where ID={0}".format(insertId)
                                             print(sql)
                                             writeCursor.execute(sql)
                                     result = {
