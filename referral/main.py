@@ -241,6 +241,7 @@ async def getReferralCodeFromUuid(request):
 @app.route("/get/event_detail", methods=['POST'])
 async def getUserDetailsFromMappingId(request):
 
+    print(request.json)
     idList = request.json.get('idList', '')
 
     if idList:
@@ -357,7 +358,7 @@ async def addReferral(request):
                                     refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=insertId, creditType='UNREALISED')
 
                                 if userTrans.get('status', False):
-                                    if refTrans.get('status', False):
+                                    if not refTrans.get('status', False):
                                         with dbWrite.cursor() as writeCursor:
                                             sql = "UPDATE `referral_mapping` SET REFERRAL_BONUS=0 where ID={0}".format(insertId)
                                             print(sql)
