@@ -7,25 +7,25 @@ import pymysql
 import pymysql.cursors
 import requests
 
-POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-# POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
+POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
 app = Sanic()
 
-db_settings = {
-    "DB_HOST": "localhost",
-    "DB_USER": "root",
-    "DB_PASS": "Yamyanyo2??",
-    "DB_NAME": "referral"
-}
-
 # db_settings = {
 #     "DB_HOST": "localhost",
-#     "DB_USER": "fabDev",
-#     "DB_PASS": "Fab@1962",
-#     "DB_NAME": "FabHotels"
+#     "DB_USER": "root",
+#     "DB_PASS": "Yamyanyo2??",
+#     "DB_NAME": "referral"
 # }
+
+db_settings = {
+    "DB_HOST": "localhost",
+    "DB_USER": "fabDev",
+    "DB_PASS": "Fab@1962",
+    "DB_NAME": "FabHotels"
+}
 
 TRANSACTION_TYPE = {
     "UNREALISEDCREDIT": 0,
