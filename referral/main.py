@@ -7,25 +7,25 @@ import pymysql
 import pymysql.cursors
 import requests
 
-# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
+# POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
 app = Sanic()
 
-# db_settings = {
-#     "DB_HOST": "localhost",
-#     "DB_USER": "root",
-#     "DB_PASS": "Yamyanyo2??",
-#     "DB_NAME": "referral"
-# }
-
 db_settings = {
     "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
+    "DB_USER": "root",
+    "DB_PASS": "Yamyanyo2??",
+    "DB_NAME": "referral"
 }
+
+# db_settings = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
 
 TRANSACTION_TYPE = {
     "UNREALISEDCREDIT": 0,
@@ -38,14 +38,14 @@ CREDIT_TYPE = {
 
 }
 
-dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-
 POINTS_PLAN_OBJECT = {}
 
 def get_points_plan_object():
+    
     if POINTS_PLAN_OBJECT:
         return POINTS_PLAN_OBJECT
+
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     with dbRead.cursor() as cursor:
         sql = "SELECT points, event, expiry FROM `referral_pointsplan`"
         cursor.execute(sql)
@@ -53,13 +53,17 @@ def get_points_plan_object():
         ret = {}
         for row in result:
             ret[row['event']] = row
-        return ret
+
+    dbRead.close()
+    return ret
 
 POINTS_PLAN_OBJECT = get_points_plan_object()
 
 maxBonusCountByReferrer = POINTS_PLAN_OBJECT.get('MaxReferralLimit', {}).get('points', 0) 
 
 def commit_transaction(responseData, referralMappingId, uuid, creditType):
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
     print(responseData)
     transactionId = responseData.get('transactionId', '')
     transactionType = TRANSACTION_TYPE.get(responseData.get('transactionType'))
@@ -73,6 +77,8 @@ def commit_transaction(responseData, referralMappingId, uuid, creditType):
             result = writeCursor.fetchone()
     except:
         print ('Some error occured in commiting transaction. Probabally a duplicate entry')
+    finally:
+        dbRead.close()
 
 #Function to add credits in user's account
 def add_credit(uuid='', pointsType='Referral Points', sourceId=123, propertyId=645, creditType='UNREALISED'):
@@ -92,33 +98,84 @@ def add_credit(uuid='', pointsType='Referral Points', sourceId=123, propertyId=6
     headers ={'content-type': "application/json",}
     response = requests.request('POST', url, data=str(data),headers=headers)
     jsonResponse = response.json()
-    commit_transaction(jsonResponse.get('data'), sourceId, uuid, pointsType)
+    
+    responseStatus = jsonResponse.get('status', False)
+
+    if responseStatus:
+        commit_transaction(jsonResponse.get('data'), sourceId, uuid, pointsType)
+    return jsonResponse
+
+def deactivate_transaction(responseData):
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
+    print(responseData)
+
+    transactionId = responseData.get('transactionId', '')
+    if transactionId:
+        try:
+            with dbWrite.cursor() as writeCursor:
+                sql = "UPDATE transactions SET ACTIVE=0 WHERE TRANSACTION_ID=%s"
+                print(sql)
+                writeCursor.execute(sql, transactionId)
+                result = writeCursor.fetchone()
+        except Exception as e: 
+            print(e)
+        finally:
+            dbWrite.close()
+
+
+def revoke_credit(transactionId=''):
+    url = POINTS_SERVICE_URL + "/fabpoints/admin/pointsservice/transaction/invalidate/{0}".format(transactionId)
+
+    headers ={'content-type': "application/json",}
+    response = requests.request('POST', url, headers=headers)
+    jsonResponse = response.json()
+    print(jsonResponse)
+
+    responseStatus = jsonResponse.get('status', False)
+
+    if responseStatus:
+        deactivate_transaction(jsonResponse.get('data'))
     return jsonResponse
 
 
 # function to generate referral code
 def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O","") +string.digits.replace("0","")):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
     while True:
         if default:
             unique_code = default[0:10]
             default = ''
         else:
             unique_code = ''.join(random.choice(chars) for _ in range(size))
-        with dbRead.cursor() as cursor:
-            sql = "SELECT CODE FROM `referral_mapping` WHERE `CODE`=%s"
-            cursor.execute(sql, unique_code)
-            result = cursor.fetchone()
-            if not result:
-                break
+        try:
+            with dbRead.cursor() as cursor:
+                sql = "SELECT CODE FROM `referral_mapping` WHERE ACTIVE=1 AND `CODE`=%s"
+                cursor.execute(sql, unique_code)
+                result = cursor.fetchone()
+                if not result:
+                    break
+        except Exception as e: 
+            print(e)
+        finally:
+            dbRead.close()
     return unique_code
 
 def should_user_get_referral_bonus(referrerUuid=''):
-    with dbRead.cursor() as readCursor:
-        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
-        readCursor.execute(sql)
-        bonusCount = readCursor.fetchone()
-        recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
+    try:
+        with dbRead.cursor() as readCursor:
+            sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where ACTIVE=1 AND AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrerUuid)
+            readCursor.execute(sql)
+            bonusCount = readCursor.fetchone()
+            recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+            print("User {0} has recived referral bonus for {1} out of max {2} allowed".format(referrerUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+    except Exception as e: 
+        print(e)
+    finally:
+        dbRead.close()
     return (recivedBonusCountByReferrer < maxBonusCountByReferrer)
 
 def create_response(success=False, data={}, message=''):
@@ -131,6 +188,9 @@ def create_response(success=False, data={}, message=''):
 
 @app.route("/ref/code", methods=['POST'])
 async def getOrGeneratCode(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
     name = request.json.get('name', '')
     uuid = request.json.get('uuid', '')
     mobileVerified = request.json.get('mobileVerified', 1)
@@ -138,7 +198,7 @@ async def getOrGeneratCode(request):
 
     if uuid:
         with dbRead.cursor() as cursor:
-            sql = "SELECT CODE, MOBILE_VERIFIED, JOINING_BONUS, REFERRAL_BONUS FROM `referral_mapping` WHERE `UUID`=%s"
+            sql = "SELECT CODE, MOBILE_VERIFIED, JOINING_BONUS, REFERRAL_BONUS FROM `referral_mapping` WHERE ACTIVE=1 AND `UUID`=%s"
             cursor.execute(sql, uuid)
             result = cursor.fetchone()
             if result:
@@ -171,11 +231,13 @@ async def getOrGeneratCode(request):
 
 @app.route("/ref/count", methods=['POST'])
 async def refCount(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
     uuid = request.json.get('uuid', '')
 
     if uuid:
         with dbRead.cursor() as cursor:
-            sql = "SELECT count(*) as referred_count FROM `referral_mapping` WHERE `REFERRAR_UUID`=%s"
+            sql = "SELECT count(*) as referred_count FROM `referral_mapping` WHERE ACTIVE=1 AND `REFERRAR_UUID`=%s"
             cursor.execute(sql, uuid)
             result = cursor.fetchone()
             if result:
@@ -195,12 +257,13 @@ async def pointsPlan(request):
 
 @app.route("/get/uuid", methods=['POST'])
 async def getUuidFromReferralCode(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
 
     if code:
         with dbRead.cursor() as cursor:
-            sql = "SELECT UUID FROM `referral_mapping` where CODE=%s"
+            sql = "SELECT UUID FROM `referral_mapping` where ACTIVE=1 AND CODE=%s"
             cursor.execute(sql, code)
             result = cursor.fetchone()
             if result:
@@ -210,20 +273,55 @@ async def getUuidFromReferralCode(request):
     else:
         return json(create_response(message='referral code not provided'))
 
+@app.route("/get/referrerCode", methods=['POST'])
+async def getReferrerCode(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
+    uuid = request.json.get('uuid', '')
+
+    if uuid:
+        with dbRead.cursor() as readCursor:
+            sql = "SELECT REFERRAR_UUID FROM `referral_mapping` where UUID=%s"
+            print(sql)
+            readCursor.execute(sql, uuid)
+            result = readCursor.fetchone()
+            if result:
+                referrerUuid = result.get('REFERRAR_UUID', False)
+                print('referrerUuid:',referrerUuid)
+                if referrerUuid:
+                    sql = "SELECT CODE FROM `referral_mapping` where UUID=%s"
+                    print(sql)
+                    readCursor.execute(sql, referrerUuid)
+                    referrerResult = readCursor.fetchone()
+                    print("DATA:", referrerResult)
+                    if referrerResult:
+                        return json(create_response(True, referrerResult))
+                    else:
+                        return json(create_response(message='Sorry no code found'))
+                else:
+                    return json(create_response(message='This user wasn\'t referred by anyone'))
+            else:
+                return json(create_response(message='Sorry can\'t find the provided uuid in the database'))
+    else:
+        return json(create_response(message='UUID not provided'))
+
+    print(request.json)
+
 @app.route("/get/code", methods=['POST'])
 async def getReferralCodeFromUuid(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     uuid = request.json.get('uuid', '')
 
     if uuid:
         with dbRead.cursor() as cursor:
             if type(uuid) is list:
-                sql = "SELECT CODE FROM `referral_mapping` where UUID in ('{0}')".format("', '".join(str(ids) for ids in uuid))
+                sql = "SELECT CODE FROM `referral_mapping` where ACTIVE=1 AND UUID in ('{0}')".format("', '".join(str(ids) for ids in uuid))
                 print(sql)
                 cursor.execute(sql)
                 result = cursor.fetchall()
             elif type(uuid) is str:
-                sql = "SELECT CODE FROM `referral_mapping` where UUID='{0}'".format(uuid)
+                sql = "SELECT CODE FROM `referral_mapping` where ACTIVE=1 AND UUID='{0}'".format(uuid)
                 print(sql)
                 cursor.execute(sql)
                 result = cursor.fetchone()
@@ -239,7 +337,8 @@ async def getReferralCodeFromUuid(request):
 
 
 @app.route("/get/event_detail", methods=['POST'])
-async def getUserDetailsFromMappingId(request):
+async def getActionDetailsFromMappingId(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     print(request.json)
     idList = request.json.get('idList', '')
@@ -266,12 +365,13 @@ async def getUserDetailsFromMappingId(request):
 
 @app.route("/check/code", methods=['POST'])
 async def isValidReferralCode(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
 
     if code:
         with dbRead.cursor() as cursor:
-            sql = "SELECT CODE FROM `referral_mapping` where CODE=%s"
+            sql = "SELECT CODE FROM `referral_mapping` where ACTIVE=1 AND CODE=%s"
             cursor.execute(sql, code)
             result = cursor.fetchone()
             if result:
@@ -283,6 +383,8 @@ async def isValidReferralCode(request):
 
 @app.route("/add/referral", methods=['POST'])
 async def addReferral(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
     uuid = request.json.get('uuid', '')
@@ -291,7 +393,7 @@ async def addReferral(request):
 
     if code:
         with dbRead.cursor() as readCursor:
-            sql = "SELECT CODE, UUID FROM `referral_mapping` where CODE=%s"
+            sql = "SELECT CODE, UUID FROM `referral_mapping` where ACTIVE=1 AND CODE=%s"
             readCursor.execute(sql, code)
             result = readCursor.fetchone()
             if result:
@@ -300,7 +402,7 @@ async def addReferral(request):
                     if referrerUuid == uuid:
                         return json(create_response(message='You can\'t refer yourself'))
                     else:
-                        sql = "SELECT ID, UUID, CODE, REFERRAR_UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{}'".format(uuid)
+                        sql = "SELECT ID, UUID, CODE, REFERRAR_UUID, MOBILE_VERIFIED FROM `referral_mapping` where ACTIVE=1 AND UUID='{}'".format(uuid)
                         readCursor.execute(sql)
                         oldData = readCursor.fetchone()
                         print(sql)
@@ -323,9 +425,9 @@ async def addReferral(request):
                                 if userTrans.get('status', False):
                                     with dbWrite.cursor() as writeCursor:
                                         if refTrans.get('status', False):
-                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=1 where UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
+                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=1 where ACTIVE=1 AND UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
                                         else :
-                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=0 where UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
+                                            sql = "UPDATE `referral_mapping` SET REFERRAR_UUID='{1}', MOBILE_VERIFIED={2}, JOINING_BONUS=1, REFERRAL_BONUS=0 where ACTIVE=1 AND UUID='{0}'".format(uuid, referrerUuid, mobileVerified)
                                         print(sql)
                                         writeCursor.execute(sql)
                                         result = {
@@ -383,6 +485,47 @@ async def addReferral(request):
     else:
         return json(create_response(message='referral code not provided'))
 
+@app.route("/revoke/referral", methods=['DELETE'])
+async def revokeReferral(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    
+    uuid = request.json.get('uuid', '')
+    
+    if uuid:
+        with dbRead.cursor() as readCursor:
+            sql = "SELECT TRANSACTION_ID, REFERRAL_MAPPING_ID FROM `transactions` WHERE ACTIVE=1 AND AFFECTED_USER_UUID=%s"
+            readCursor.execute(sql, uuid)
+            result = readCursor.fetchall()
+            if result:
+                referralMappingIdList = []
+                transactionIdList = []
+                for transactions in result:
+                    transactionId = transactions.get('TRANSACTION_ID', '')
+                    print('||')
+                    print('||')
+                    print(transactionId)
+                    print('||')
+                    print('||')
+                    inValidateTransactionResponse = revoke_credit(transactionId)
+                    
+                    if inValidateTransactionResponse.get('status', False):
+                        transactionIdList.append(transactionId)
+                        referralMappingIdList.append(transactions.get('REFERRAL_MAPPING_ID', ''))
+                
+                with dbWrite.cursor() as writeCursor:
+                    sql = "UPDATE `referral_mapping` SET ACTIVE=0 WHERE ACTIVE=1 AND ID in ('{0}')".format("', '".join(map(str, referralMappingIdList)))
+                    writeCursor.execute(sql)
+            else:
+                return json(create_response(message='Can not find any transaction related to the UUID that you have provided'))
+        ret = {
+            "updatedIdList": referralMappingIdList,
+            "updatedTransactionIdList": transactionIdList
+        }
+        return json(create_response(True, ret))
+
+    else:
+        return json(create_response(message='UUID not provided'))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, workers=4)
+    app.run(host="0.0.0.0", port=5000, workers=10)

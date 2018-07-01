@@ -63,7 +63,7 @@ def convert_transaction_type(payload):
             if transactionStatus:
                 print(transactionId, transactionStatus)
                 with dbWrite.cursor() as writeCursor:
-                    sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where TRANSACTION_ID='{}'".format(transactionId)
+                    sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where ACTIVE=1 AND TRANSACTION_ID='{}'".format(transactionId)
                     print(sql)
                     writeCursor.execute(sql)
 
@@ -100,7 +100,7 @@ def kafkaCall():
 
                 if userMobileStatusKafka:
                     with dbRead.cursor() as readCursor:
-                        sql = "SELECT ID, UUID, MOBILE_VERIFIED, FIRST_CHECKOUT FROM `referral_mapping` where UUID='{0}'".format(userUuidKafka)
+                        sql = "SELECT ID, UUID, MOBILE_VERIFIED, FIRST_CHECKOUT FROM `referral_mapping` where ACTIVE=1 AND UUID='{0}'".format(userUuidKafka)
                         readCursor.execute(sql)
                         result = readCursor.fetchone()
 
@@ -111,7 +111,7 @@ def kafkaCall():
                             if userMobileStatusKafka == userMobileStatusDb:
                                 print('No need for status update')
                             else:
-                                sql = "SELECT ID, UUID FROM `referral_mapping` where REFERRAR_UUID='{0}' AND FIRST_CHECKOUT=1 LIMIT 10".format(userUuidKafka)
+                                sql = "SELECT ID, UUID FROM `referral_mapping` where ACTIVE=1 REFERRAR_UUID='{0}' AND FIRST_CHECKOUT=1 LIMIT 10".format(userUuidKafka)
                                 print(sql)
                                 readCursor.execute(sql)
                                 referedUserResult = readCursor.fetchall()
@@ -124,7 +124,7 @@ def kafkaCall():
                                 transactionIdList = []
 
                                 if len(idList) > 0:
-                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ({0}) AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
+                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ({0}) AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
                                     print(sql)
                                     readCursor.execute(sql)
                                     result = readCursor.fetchall()
@@ -134,7 +134,7 @@ def kafkaCall():
 
                                 print(transactionIdList)
 
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID = '{0}' AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=0 LIMIT 10".format(userReferralMappingId, userUuidKafka)
+                                sql = "SELECT TRANSACTION_ID FROM `transactions` where  ACTIVE=1 TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID = '{0}' AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=0 LIMIT 10".format(userReferralMappingId, userUuidKafka)
                                 print(sql)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchone()

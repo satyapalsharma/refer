@@ -62,7 +62,7 @@ def convert_transaction_type(payload):
             if transactionStatus:
                 print(transactionId, transactionStatus)
                 with dbWrite.cursor() as writeCursor:
-                    sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where TRANSACTION_ID='{}'".format(transactionId)
+                    sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where ACTIVE=1 TRANSACTION_ID='{}'".format(transactionId)
                     print(sql)
                     writeCursor.execute(sql)
 
@@ -95,26 +95,26 @@ def kafkaCall():
                 # print ('data',data)
                 # print ('got data')
                 action = msg.get('guestStatus', '')
-                uuid = msg.get('userId', '')
+                uuid = msg.get('originalUserId', '')
                 if action=='CHECKOUT':
                     with dbRead.cursor() as readCursor:
-                        sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where UUID='{0}'".format(uuid)
+                        sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(uuid)
                         readCursor.execute(sql)
                         result = readCursor.fetchone()
                         if result:
                             referrarUuid = result.get('REFERRAR_UUID', '')
                             userId = result.get('ID', 0)
-                            sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where UUID='{0}'".format(referrarUuid)
+                            sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(referrarUuid)
                             readCursor.execute(sql)
                             referrarResult = readCursor.fetchone()
                             if referrarResult:
                                 referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
                                 if bool(ord(referrarMobileVerified)):
-                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
+                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
                                     readCursor.execute(sql)
                                     result = readCursor.fetchone()
 
-                                    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
+                                    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
                                     readCursor.execute(sql)
                                     bonusCount = readCursor.fetchone()
                                     recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
