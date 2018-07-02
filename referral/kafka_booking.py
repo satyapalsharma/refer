@@ -128,6 +128,8 @@ def kafkaCall():
                                             if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
                                                 payload = [result.get('TRANSACTION_ID')]
                                                 convert_transaction_type(payload)
+                                            else:
+                                                
                                     with dbWrite.cursor() as writeCursor:
                                         sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
                                         print(sql)

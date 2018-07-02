@@ -7,25 +7,25 @@ import pymysql
 import pymysql.cursors
 import requests
 
-# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
+# POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
 app = Sanic()
 
-# db_settings = {
-#     "DB_HOST": "localhost",
-#     "DB_USER": "root",
-#     "DB_PASS": "Yamyanyo2??",
-#     "DB_NAME": "referral"
-# }
-
 db_settings = {
     "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
+    "DB_USER": "root",
+    "DB_PASS": "Yamyanyo2??",
+    "DB_NAME": "referral"
 }
+
+# db_settings = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
 
 TRANSACTION_TYPE = {
     "UNREALISEDCREDIT": 0,
@@ -78,7 +78,7 @@ def commit_transaction(responseData, referralMappingId, uuid, creditType):
     except:
         print ('Some error occured in commiting transaction. Probabally a duplicate entry')
     finally:
-        dbRead.close()
+        dbWrite.close()
 
 #Function to add credits in user's account
 def add_credit(uuid='', pointsType='Referral Points', sourceId=123, propertyId=645, creditType='UNREALISED'):
@@ -422,6 +422,12 @@ async def addReferral(request):
                                 if should_user_get_referral_bonus(referrerUuid):
                                     refTrans = add_credit(referrerUuid, pointsType='Referral Points', sourceId=oldData.get('ID', 0), creditType='UNREALISED')
         
+                                print('+++++++++++++++++++++++++++++++')
+                                print('++++++++Transaction status+++++')
+                                print(userTrans)
+                                print(refTrans)
+                                print('===============================')
+
                                 if userTrans.get('status', False):
                                     with dbWrite.cursor() as writeCursor:
                                         if refTrans.get('status', False):
