@@ -24,15 +24,13 @@ db_settings = {
 
 POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
-dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-
-
 POINTS_PLAN_OBJECT = {}
 
 def get_points_plan_object():
     if POINTS_PLAN_OBJECT:
         return POINTS_PLAN_OBJECT
+
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     with dbRead.cursor() as cursor:
         sql = "SELECT points, event, expiry FROM `referral_pointsplan`"
         cursor.execute(sql)
@@ -40,10 +38,10 @@ def get_points_plan_object():
         ret = {}
         for row in result:
             ret[row['event']] = row
-        return ret
+    dbRead.close()
+    return ret
 
 POINTS_PLAN_OBJECT = get_points_plan_object()
-
 
 maxBonusCountByReferrer = POINTS_PLAN_OBJECT.get('MaxReferralLimit', {}).get('points', 0)
 
@@ -61,10 +59,13 @@ def convert_transaction_type(payload):
             transactionStatus = responseData.get(transactionId, False)
             if transactionStatus:
                 print(transactionId, transactionStatus)
+                
+                dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
                 with dbWrite.cursor() as writeCursor:
                     sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where ACTIVE=1 TRANSACTION_ID='{}'".format(transactionId)
                     print(sql)
                     writeCursor.execute(sql)
+                dbWrite.close()
 
 
 def kafkaCall():
@@ -95,42 +96,49 @@ def kafkaCall():
                 # print ('data',data)
                 # print ('got data')
                 action = msg.get('guestStatus', '')
-                uuid = msg.get('originalUserId', '')
-                if action=='CHECKOUT':
-                    with dbRead.cursor() as readCursor:
-                        sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(uuid)
-                        readCursor.execute(sql)
-                        result = readCursor.fetchone()
-                        if result:
-                            referrarUuid = result.get('REFERRAR_UUID', '')
-                            userId = result.get('ID', 0)
-                            sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(referrarUuid)
-                            readCursor.execute(sql)
-                            referrarResult = readCursor.fetchone()
-                            if referrarResult:
-                                referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
-                                if bool(ord(referrarMobileVerified)):
-                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
-                                    readCursor.execute(sql)
-                                    result = readCursor.fetchone()
+                uuid = msg.get('originalUserId', False)
+                if uuid:
+                    if action=='CHECKOUT':
 
-                                    sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
-                                    readCursor.execute(sql)
-                                    bonusCount = readCursor.fetchone()
-                                    recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
-                                    print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
-                                    if result:
-                                        if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
-                                            payload = [result.get('TRANSACTION_ID')]
-                                            convert_transaction_type(payload)
-                                with dbWrite.cursor() as writeCursor:
-                                    sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
-                                    print(sql)
-                                    writeCursor.execute(sql)
-                                    
-                        else:
-                            print('this uuid is not in the referral system')
-    consumer.close()
+                        dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+                        dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
+                        with dbRead.cursor() as readCursor:
+                            sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(uuid)
+                            readCursor.execute(sql)
+                            result = readCursor.fetchone()
+                            if result:
+                                referrarUuid = result.get('REFERRAR_UUID', '')
+                                userId = result.get('ID', 0)
+                                sql = "SELECT UUID, MOBILE_VERIFIED FROM `referral_mapping` where ACTIVE=1 UUID='{0}'".format(referrarUuid)
+                                readCursor.execute(sql)
+                                referrarResult = readCursor.fetchone()
+                                if referrarResult:
+                                    referrarMobileVerified = referrarResult.get('MOBILE_VERIFIED', False)
+                                    if bool(ord(referrarMobileVerified)):
+                                        sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID={1} ".format(referrarUuid, userId)
+                                        readCursor.execute(sql)
+                                        result = readCursor.fetchone()
+
+                                        sql = "SELECT count(*) as recivedBonusCountByReferrer FROM `transactions` where ACTIVE=1 AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=1  ".format(referrarUuid)
+                                        readCursor.execute(sql)
+                                        bonusCount = readCursor.fetchone()
+                                        recivedBonusCountByReferrer = bonusCount.get('recivedBonusCountByReferrer', 0)
+                                        print("User {0} has already recived referral bonus for {1} out of max {2} allowed".format(referrarUuid, recivedBonusCountByReferrer, maxBonusCountByReferrer))
+                                        if result:
+                                            if (recivedBonusCountByReferrer < maxBonusCountByReferrer):
+                                                payload = [result.get('TRANSACTION_ID')]
+                                                convert_transaction_type(payload)
+                                    with dbWrite.cursor() as writeCursor:
+                                        sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)
+                                        print(sql)
+                                        writeCursor.execute(sql)
+                                        
+                            else:
+                                print('this uuid is not in the referral system')
+                        dbRead.close()
+                        dbWrite.close()
+
     
                 
             
