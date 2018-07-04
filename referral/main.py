@@ -405,7 +405,7 @@ async def isValidReferralCode(request):
             if result:
                 return json(create_response(True, result))
             else:
-                return json(create_response(message='referral code invalid'))
+                return json(create_response(message='Invalid referral code'))
     else:
         return json(create_response(message='referral code not provided'))
 
