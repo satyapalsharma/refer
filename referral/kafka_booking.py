@@ -129,6 +129,10 @@ def kafkaCall():
                                                 payload = [result.get('TRANSACTION_ID')]
                                                 convert_transaction_type(payload)
                                             else:
+                                                with dbWrite.cursor() as writeCursor:
+                                                    sql = "UPDATE `transactions` SET EXTRA_META_DATA = 'IMMUTABLE' where ACTIVE=1 AND AFFECTED_USER_UUID='{0}' AND DISCOUNT_TYPE=1 AND TRANSACTION_TYPE=0  ".format(referrarUuid)
+                                                    print(sql)
+                                                    writeCursor.execute(sql)
                                                 
                                     with dbWrite.cursor() as writeCursor:
                                         sql = "UPDATE `referral_mapping` SET FIRST_CHECKOUT=1 where ID='{0}'".format(userId)

@@ -24,16 +24,13 @@ db_settings = {
 
 POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
-dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-
-
-
 POINTS_PLAN_OBJECT = {}
 
 def get_points_plan_object():
     if POINTS_PLAN_OBJECT:
         return POINTS_PLAN_OBJECT
+
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     with dbRead.cursor() as cursor:
         sql = "SELECT points, event, expiry FROM `referral_pointsplan`"
         cursor.execute(sql)
@@ -41,7 +38,8 @@ def get_points_plan_object():
         ret = {}
         for row in result:
             ret[row['event']] = row
-        return ret
+    dbRead.close()
+    return ret
 
 POINTS_PLAN_OBJECT = get_points_plan_object()
 
@@ -54,6 +52,9 @@ def convert_transaction_type(payload):
     response = requests.request('POST', url, data=str(json.dumps(payload)),headers=headers)
     responseJson = response.json()
     responseStatus = responseJson.get('status', False)
+
+    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
     if responseStatus:
         responseData = responseJson.get('data', False)
         print(responseJson)
@@ -66,6 +67,7 @@ def convert_transaction_type(payload):
                     sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where ACTIVE=1 AND TRANSACTION_ID='{}'".format(transactionId)
                     print(sql)
                     writeCursor.execute(sql)
+    dbWrite.close()
 
 
 def kafkaCall():
@@ -99,6 +101,10 @@ def kafkaCall():
                 userUuidKafka = jsonData.get('userId', '')
 
                 if userMobileStatusKafka:
+
+                    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+                    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
                     with dbRead.cursor() as readCursor:
                         sql = "SELECT ID, UUID, MOBILE_VERIFIED, FIRST_CHECKOUT FROM `referral_mapping` where ACTIVE=1 AND UUID='{0}'".format(userUuidKafka)
                         readCursor.execute(sql)
@@ -148,6 +154,8 @@ def kafkaCall():
                                     sql = "UPDATE `referral_mapping` SET MOBILE_VERIFIED=1 where ID='{0}'".format(userReferralMappingId)
                                     print(sql)
                                     writeCursor.execute(sql)
+                    dbRead.close()
+                    dbWrite.close()
 
 
 kafkaCall()

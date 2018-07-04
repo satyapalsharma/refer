@@ -158,8 +158,8 @@ def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O",
                     break
         except Exception as e: 
             print(e)
-        finally:
-            dbRead.close()
+
+    dbRead.close()  
     return unique_code
 
 def should_user_get_referral_bonus(referrerUuid=''):
@@ -363,6 +363,34 @@ async def getActionDetailsFromMappingId(request):
     else:
         return json(create_response(message='Id list not provided'))
 
+@app.route("/get/transaction_detail", methods=['POST'])
+async def getTransactionDetailsFromTransaction(request):
+    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+
+    print(request.json)
+    transactions = request.json.get('transactions', '')
+
+    if transactions:
+        with dbRead.cursor() as cursor:
+            if type(transactions) is list:
+                sql = "SELECT TRANSACTION_ID, TRANSACTION_TYPE, EXTRA_META_DATA FROM `transactions` where TRANSACTION_ID in ('{0}')".format("', '".join(str(ids) for ids in transactions))
+                cursor.execute(sql)
+                result = cursor.fetchall()
+            elif type(transactions) is str:
+                sql = "SELECT TRANSACTION_ID, TRANSACTION_TYPE, EXTRA_META_DATA FROM `transactions` where TRANSACTION_ID = ('{0}')".format(transactions)
+                cursor.execute(sql)
+                result = cursor.fetchone()
+            else:
+                return json(create_response(message='Sorry I can\'t understand the data you requested'))
+
+            if result:
+                return json(create_response(True, result))
+            else:
+                return json(create_response(message='details not found for provided trasactions'))
+    else:
+        return json(create_response(message='transaction list not provided'))
+
+
 @app.route("/check/code", methods=['POST'])
 async def isValidReferralCode(request):
     dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
@@ -503,13 +531,14 @@ async def revokeReferral(request):
             sql = "SELECT TRANSACTION_ID, REFERRAL_MAPPING_ID FROM `transactions` WHERE ACTIVE=1 AND AFFECTED_USER_UUID=%s"
             readCursor.execute(sql, uuid)
             result = readCursor.fetchall()
+            print(result)
             if result:
                 referralMappingIdList = []
                 transactionIdList = []
                 for transactions in result:
                     transactionId = transactions.get('TRANSACTION_ID', '')
                     print('||')
-                    print('||')
+                    print('| Revoke Referral |')
                     print(transactionId)
                     print('||')
                     print('||')
