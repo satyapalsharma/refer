@@ -145,7 +145,7 @@ def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O",
     
     while True:
         if default:
-            unique_code = default[0:10]
+            unique_code = default.upper()[0:10]
             default = ''
         else:
             unique_code = ''.join(random.choice(chars) for _ in range(size))
