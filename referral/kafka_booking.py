@@ -96,8 +96,9 @@ def kafkaCall():
                 # print ('got data')
                 action = msg.get('guestStatus', '')
                 uuid = msg.get('originalUserId', '')
+                travellerUuid = msg.get('userId', '')
                 if uuid:
-                    if action=='CHECKOUT':
+                    if action=='CHECKOUT' & (uuid == travellerUuid):
                         print ('data',msg)
                         dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
                         dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
