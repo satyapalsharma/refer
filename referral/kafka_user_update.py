@@ -117,7 +117,7 @@ def kafkaCall():
                             if userMobileStatusKafka == userMobileStatusDb:
                                 print('No need for status update')
                             else:
-                                sql = "SELECT ID, UUID FROM `referral_mapping` where ACTIVE=1 REFERRAR_UUID='{0}' AND FIRST_CHECKOUT=1 LIMIT 10".format(userUuidKafka)
+                                sql = "SELECT ID, UUID FROM `referral_mapping` where ACTIVE=1 AND REFERRAR_UUID='{0}' AND FIRST_CHECKOUT=1 LIMIT 10".format(userUuidKafka)
                                 print(sql)
                                 readCursor.execute(sql)
                                 referedUserResult = readCursor.fetchall()
@@ -130,7 +130,7 @@ def kafkaCall():
                                 transactionIdList = []
 
                                 if len(idList) > 0:
-                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ({0}) AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
+                                    sql = "SELECT TRANSACTION_ID FROM `transactions` where ACTIVE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID in ({0}) AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=1 LIMIT 10".format(",".join(map(str, idList)), userUuidKafka)
                                     print(sql)
                                     readCursor.execute(sql)
                                     result = readCursor.fetchall()
@@ -140,7 +140,7 @@ def kafkaCall():
 
                                 print(transactionIdList)
 
-                                sql = "SELECT TRANSACTION_ID FROM `transactions` where  ACTIVE=1 TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID = '{0}' AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=0 LIMIT 10".format(userReferralMappingId, userUuidKafka)
+                                sql = "SELECT TRANSACTION_ID FROM `transactions` where  ACTIVE=1 AND TRANSACTION_TYPE=0 AND REFERRAL_MAPPING_ID = '{0}' AND AFFECTED_USER_UUID='{1}' AND DISCOUNT_TYPE=0 LIMIT 10".format(userReferralMappingId, userUuidKafka)
                                 print(sql)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchone()
