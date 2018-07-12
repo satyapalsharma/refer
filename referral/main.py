@@ -20,7 +20,21 @@ app = Sanic()
 #     "DB_NAME": "referral"
 # }
 
-db_settings = {
+# db_settings = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
+
+db_read_config = {
+    "DB_HOST": "localhost",
+    "DB_USER": "fabDev",
+    "DB_PASS": "Fab@1962",
+    "DB_NAME": "FabHotels"
+}
+
+db_write_config = {
     "DB_HOST": "localhost",
     "DB_USER": "fabDev",
     "DB_PASS": "Fab@1962",
@@ -45,7 +59,7 @@ def get_points_plan_object():
     if POINTS_PLAN_OBJECT:
         return POINTS_PLAN_OBJECT
 
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     with dbRead.cursor() as cursor:
         sql = "SELECT points, event, expiry FROM `referral_pointsplan`"
         cursor.execute(sql)
@@ -62,7 +76,7 @@ POINTS_PLAN_OBJECT = get_points_plan_object()
 maxBonusCountByReferrer = POINTS_PLAN_OBJECT.get('MaxReferralLimit', {}).get('points', 0) 
 
 def commit_transaction(responseData, referralMappingId, uuid, creditType):
-    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     print(responseData)
     transactionId = responseData.get('transactionId', '')
@@ -106,7 +120,7 @@ def add_credit(uuid='', pointsType='Referral Points', sourceId=123, propertyId=6
     return jsonResponse
 
 def deactivate_transaction(responseData):
-    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     print(responseData)
 
@@ -141,7 +155,7 @@ def revoke_credit(transactionId=''):
 
 # function to generate referral code
 def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O","") +string.digits.replace("0","")):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     while True:
         if default:
@@ -163,7 +177,7 @@ def code_generator(size=6, default='', chars=string.ascii_uppercase.replace("O",
     return unique_code
 
 def should_user_get_referral_bonus(referrerUuid=''):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     try:
         with dbRead.cursor() as readCursor:
@@ -186,10 +200,14 @@ def create_response(success=False, data={}, message=''):
     }
     return ret
 
+@app.route("/health_check", methods=['POST', 'GET'])
+async def showHealth(request):
+    return json(create_response(True))
+
 @app.route("/ref/code", methods=['POST'])
 async def getOrGeneratCode(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     name = request.json.get('name', '')
     uuid = request.json.get('uuid', '')
@@ -231,7 +249,7 @@ async def getOrGeneratCode(request):
 
 @app.route("/ref/count", methods=['POST'])
 async def refCount(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     uuid = request.json.get('uuid', '')
 
@@ -257,7 +275,7 @@ async def pointsPlan(request):
 
 @app.route("/get/uuid", methods=['POST'])
 async def getUuidFromReferralCode(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
 
@@ -275,7 +293,7 @@ async def getUuidFromReferralCode(request):
 
 @app.route("/get/referrerCode", methods=['POST'])
 async def getReferrerCode(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     uuid = request.json.get('uuid', '')
 
@@ -309,7 +327,7 @@ async def getReferrerCode(request):
 
 @app.route("/get/code", methods=['POST'])
 async def getReferralCodeFromUuid(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     uuid = request.json.get('uuid', '')
 
@@ -338,7 +356,7 @@ async def getReferralCodeFromUuid(request):
 
 @app.route("/get/event_detail", methods=['POST'])
 async def getActionDetailsFromMappingId(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     print(request.json)
     idList = request.json.get('idList', '')
@@ -365,7 +383,7 @@ async def getActionDetailsFromMappingId(request):
 
 @app.route("/get/transaction_detail", methods=['POST'])
 async def getTransactionDetailsFromTransaction(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     print(request.json)
     transactions = request.json.get('transactions', '')
@@ -393,7 +411,7 @@ async def getTransactionDetailsFromTransaction(request):
 
 @app.route("/check/code", methods=['POST'])
 async def isValidReferralCode(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
 
@@ -411,8 +429,8 @@ async def isValidReferralCode(request):
 
 @app.route("/add/referral", methods=['POST'])
 async def addReferral(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
     code = request.json.get('code', '')
     uuid = request.json.get('uuid', '')
@@ -521,8 +539,8 @@ async def addReferral(request):
 
 @app.route("/revoke/referral", methods=['DELETE'])
 async def revokeReferral(request):
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-    dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     
     uuid = request.json.get('uuid', '')
     
