@@ -20,18 +20,32 @@ import pymysql.cursors
 #     "DB_NAME": "FabHotels"
 # }
 
+# db_read_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
+
+# db_write_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
+
 db_read_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
+    "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
+    "DB_USER": "refferral_read",
+    "DB_PASS": "mSq6Tr9ZYNw6ryqB",
+    "DB_NAME": "refferral_microservice"
 }
 
 db_write_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
+    "DB_HOST": "fabuser-microservice.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
+    "DB_USER": "refferral_write",
+    "DB_PASS": "ushRtSTvEg5nytDJ",
+    "DB_NAME": "refferral_microservice"
 }
 
 # POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
