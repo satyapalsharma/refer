@@ -13,7 +13,21 @@ import pymysql.cursors
 #     "DB_NAME": "referral"
 # }
 
-db_settings = {
+# db_settings = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
+
+db_read_config = {
+    "DB_HOST": "localhost",
+    "DB_USER": "fabDev",
+    "DB_PASS": "Fab@1962",
+    "DB_NAME": "FabHotels"
+}
+
+db_write_config = {
     "DB_HOST": "localhost",
     "DB_USER": "fabDev",
     "DB_PASS": "Fab@1962",
@@ -22,7 +36,9 @@ db_settings = {
 
 # POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
+# POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
+
+POINTS_SERVICE_URL = 'internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com'
 
 POINTS_PLAN_OBJECT = {}
 
@@ -30,7 +46,7 @@ def get_points_plan_object():
     if POINTS_PLAN_OBJECT:
         return POINTS_PLAN_OBJECT
 
-    dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
     with dbRead.cursor() as cursor:
         sql = "SELECT points, event, expiry FROM `referral_pointsplan`"
         cursor.execute(sql)
@@ -60,7 +76,7 @@ def convert_transaction_type(payload):
             if transactionStatus:
                 print(transactionId, transactionStatus)
                 
-                dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+                dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
                 with dbWrite.cursor() as writeCursor:
                     sql = "UPDATE `transactions` SET TRANSACTION_TYPE=1 where ACTIVE=1 AND TRANSACTION_ID='{}'".format(transactionId)
                     print(sql)
@@ -86,22 +102,22 @@ def kafkaCall():
 
     #creating kafka consumer
     # consumer = KafkaConsumer('bookingpoints',bootstrap_servers='13.127.227.239:9092', auto_offset_reset='earliest')
-    consumer = KafkaConsumer('bookingpoints',bootstrap_servers='172.31.21.241:9092', auto_offset_reset='earliest')
+    consumer = KafkaConsumer('bookingpoints',bootstrap_servers=['10.0.1.220:9092', '10.0.1.81:9092'], auto_offset_reset='earliest')
     print(consumer)
     while(True):
         print('inside loop')
         if consumer:
             for msg in consumer:
                 msg = eval(msg.value)
-                # print ('got data')
+                print ('got data', msg)
                 action = msg.get('guestStatus', '')
                 uuid = msg.get('originalUserId', '')
                 travellerUuid = msg.get('userId', '')
                 if uuid:
                     if (action=='CHECKOUT') & (uuid == travellerUuid):
                         print ('data',msg)
-                        dbRead = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
-                        dbWrite = pymysql.connect(host=db_settings["DB_HOST"], user=db_settings["DB_USER"], password=db_settings["DB_PASS"], db=db_settings["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+                        dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+                        dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
 
                         with dbRead.cursor() as readCursor:
                             sql = "SELECT ID, UUID, REFERRAR_UUID FROM `referral_mapping` where ACTIVE=1 AND UUID='{0}'".format(uuid)
