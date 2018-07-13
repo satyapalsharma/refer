@@ -11,7 +11,7 @@ import requests
 
 # POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
-POINTS_SERVICE_URL = 'internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com'
+POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com'
 
 app = Sanic()
 

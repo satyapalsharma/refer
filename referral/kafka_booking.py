@@ -20,19 +20,19 @@ import pymysql.cursors
 #     "DB_NAME": "FabHotels"
 # }
 
-db_read_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
-}
+# db_read_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
 
-db_write_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "fabDev",
-    "DB_PASS": "Fab@1962",
-    "DB_NAME": "FabHotels"
-}
+# db_write_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "fabDev",
+#     "DB_PASS": "Fab@1962",
+#     "DB_NAME": "FabHotels"
+# }
 
 db_read_config = {
     "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
@@ -52,7 +52,7 @@ db_write_config = {
 
 # POINTS_SERVICE_URL = 'http://172.31.7.216:8080'
 
-POINTS_SERVICE_URL = 'internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com'
+POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com:8020'
 
 POINTS_PLAN_OBJECT = {}
 
