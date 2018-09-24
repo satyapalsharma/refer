@@ -175,7 +175,8 @@ def kafkaCall():
                                 print(sql)
                                 readCursor.execute(sql)
                                 result = readCursor.fetchone()
-                                transactionIdList.append(result.get('TRANSACTION_ID', ''))
+                                if result:
+                                    transactionIdList.append(result.get('TRANSACTION_ID', ''))
 
                                 print(transactionIdList)
 
