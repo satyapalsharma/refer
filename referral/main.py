@@ -649,7 +649,7 @@ async def uploadUserContact(request):
                             'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
                             'smsType': 'TEXT'
                         }
-                        # print(m)
+                        print(m)
                         future = producer.send(KAFKA_TOPIC, pyjson.dumps(m).encode('utf-8'))
 
                         producer.flush()
