@@ -637,13 +637,14 @@ async def uploadUserContact(request):
                 if phoneNumbers:
                     for number in phoneNumbers:
                         print(number)
-                        number = number.lstrip('+91')
+                        if number.find('+91') == 0:
+                            number = number[3:]
                         print(number)
-                        number = number.lstrip('0')
+
+                        if number.find('0') == 0:
+                            number = number[1:]
                         print(number)
-                        if(len(number) == 12):
-                            number = number.lstrip('91')
-                        print(number)
+
                         if len(number) != 10:
                             continue
                         number = re.sub('[^0-9]','', number)
