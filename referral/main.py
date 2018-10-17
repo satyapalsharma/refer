@@ -650,7 +650,7 @@ async def uploadUserContact(request):
                             'SmsType': 1
                         }
                         # print(m)
-                        future = await producer.send(KAFKA_TOPIC, pyjson.dumps(m).encode('utf-8'))
+                        future = producer.send(KAFKA_TOPIC, pyjson.dumps(m).encode('utf-8'))
 
             ret = {}
             return json(create_response(True, ret))
