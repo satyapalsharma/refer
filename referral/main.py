@@ -636,17 +636,22 @@ async def uploadUserContact(request):
                 phoneNumbers = contact.get('phoneNumbers',[])
                 if phoneNumbers:
                     for number in phoneNumbers:
+                        print(number)
                         number = number.lstrip('+91')
+                        print(number)
                         number = number.lstrip('0')
+                        print(number)
                         if(len(number) == 12):
                             number = number.lstrip('91')
+                        print(number)
                         if len(number) != 10:
                             continue
                         number = re.sub('[^0-9]','', number)
                         m = {
                             'mobile': number,
                             'countryCode': '+91',
-                            'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
+                            # 'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
+                            'text': '<variable> off on your future bookings <variable> Register using <variable>',
                             'smsType': 'TEXT'
                         }
                         print(m)
