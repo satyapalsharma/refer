@@ -619,7 +619,7 @@ async def uploadUserContact(request):
                     writeCursor.execute(sql)
             dbWrite.commit()
 
-            producer = KafkaProducer(KAFKA_TOPIC,bootstrap_servers=KAFKA_BROKERS, auto_offset_reset='earliest')
+            producer = KafkaProducer(bootstrap_servers=KAFKA_BROKERS)
 
             code = ''
 
@@ -646,10 +646,11 @@ async def uploadUserContact(request):
                         m = {
                             'mobile': number,
                             'countryCode': '+91',
-                            'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code)
+                            'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
+                            'SmsType': 1
                         }
                         # print(m)
-                        producer.send(m)
+                        future = await producer.send(KAFKA_TOPIC, pyjson.dumps(m).encode('utf-8'))
 
             ret = {}
             return json(create_response(True, ret))
@@ -660,4 +661,4 @@ async def uploadUserContact(request):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, workers=10)
+    app.run(host="0.0.0.0", port=5005, workers=2)
