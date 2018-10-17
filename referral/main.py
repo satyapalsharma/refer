@@ -7,42 +7,47 @@ import pymysql
 import pymysql.cursors
 import requests
 import json as pyjson
+import re
+from kafka import KafkaProducer
 
-POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+KAFKA_TOPIC = 'sms'
+KAFKA_BROKERS = ['localhost:9092']
 
-# POINTS_SERVICE_URL = 'http://localhost:8070'
+# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+
+POINTS_SERVICE_URL = 'http://localhost:8070'
 
 # POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com:8020'
 
 app = Sanic()
 
-db_read_config = {
-    "DB_HOST": "127.0.0.1",
-    "DB_USER": "root",
-    "DB_PASS": "Yamyanyo2??",
-    "DB_NAME": "referral_microservice"
-}
-
-db_write_config = {
-    "DB_HOST": "127.0.0.1",
-    "DB_USER": "root",
-    "DB_PASS": "Yamyanyo2??",
-    "DB_NAME": "referral_microservice"
-}
-
 # db_read_config = {
-#     "DB_HOST": "localhost",
+#     "DB_HOST": "127.0.0.1",
 #     "DB_USER": "root",
-#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_PASS": "Yamyanyo2??",
 #     "DB_NAME": "referral_microservice"
 # }
 
 # db_write_config = {
-#     "DB_HOST": "localhost",
+#     "DB_HOST": "127.0.0.1",
 #     "DB_USER": "root",
-#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_PASS": "Yamyanyo2??",
 #     "DB_NAME": "referral_microservice"
 # }
+
+db_read_config = {
+    "DB_HOST": "localhost",
+    "DB_USER": "root",
+    "DB_PASS": "3p7G(kyJ?yN)~22X",
+    "DB_NAME": "referral_microservice"
+}
+
+db_write_config = {
+    "DB_HOST": "localhost",
+    "DB_USER": "root",
+    "DB_PASS": "3p7G(kyJ?yN)~22X",
+    "DB_NAME": "referral_microservice"
+}
 
 # db_read_config = {
 #     "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
@@ -610,9 +615,41 @@ async def uploadUserContact(request):
                     emails = pyjson.dumps(contact.get('emails',0))
                     phoneNumbers = pyjson.dumps(contact.get('phoneNumbers',0))
 
-                    sql = "INSERT IGNORE INTO `user_contacts` (user_id, unique_device_id, contact_id, contact_name, contact_phones, contact_emails) VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(uuid, deviceId, id, name, emails, phoneNumbers)
+                    sql = "INSERT IGNORE INTO `user_contacts` (user_id, unique_device_id, contact_id, contact_name, contact_phones, contact_emails) VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(uuid, deviceId, id, name, phoneNumbers, emails)
                     writeCursor.execute(sql)
             dbWrite.commit()
+
+            producer = KafkaProducer(KAFKA_TOPIC,bootstrap_servers=KAFKA_BROKERS, auto_offset_reset='earliest')
+
+            code = ''
+
+            with dbRead.cursor() as readCursor:
+                sql = "SELECT CODE FROM `referral_mapping` where ACTIVE=1 AND UUID='{0}'".format(uuid)
+                print(sql)
+                readCursor.execute(sql)
+                result = readCursor.fetchone()
+                code = result.get('CODE', '')
+
+            # print(POINTS_PLAN_OBJECT)
+
+            for contact in data:
+                phoneNumbers = contact.get('phoneNumbers',[])
+                if phoneNumbers:
+                    for number in phoneNumbers:
+                        number = number.lstrip('+91')
+                        number = number.lstrip('0')
+                        if(len(number) == 12):
+                            number = number.lstrip('91')
+                        if len(number) != 10:
+                            continue
+                        number = re.sub('[^0-9]','', number)
+                        m = {
+                            'mobile': number,
+                            'countryCode': '+91',
+                            'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code)
+                        }
+                        # print(m)
+                        producer.send(m)
 
             ret = {}
             return json(create_response(True, ret))
