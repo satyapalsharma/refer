@@ -6,42 +6,43 @@ import random
 import pymysql
 import pymysql.cursors
 import requests
+import json as pyjson
 
-# POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
+POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-POINTS_SERVICE_URL = 'http://localhost:8070'
+# POINTS_SERVICE_URL = 'http://localhost:8070'
 
 # POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com:8020'
 
 app = Sanic()
 
-# db_settings = {
-#     "DB_HOST": "localhost",
-#     "DB_USER": "root",
-#     "DB_PASS": "Yamyanyo2??",
-#     "DB_NAME": "referral"
-# }
-
-# db_settings = {
-#     "DB_HOST": "localhost",
-#     "DB_USER": "fabDev",
-#     "DB_PASS": "Fab@1962",
-#     "DB_NAME": "FabHotels"
-# }
-
 db_read_config = {
-    "DB_HOST": "localhost",
+    "DB_HOST": "127.0.0.1",
     "DB_USER": "root",
-    "DB_PASS": "3p7G(kyJ?yN)~22X",
+    "DB_PASS": "Yamyanyo2??",
     "DB_NAME": "referral_microservice"
 }
 
 db_write_config = {
-    "DB_HOST": "localhost",
+    "DB_HOST": "127.0.0.1",
     "DB_USER": "root",
-    "DB_PASS": "3p7G(kyJ?yN)~22X",
+    "DB_PASS": "Yamyanyo2??",
     "DB_NAME": "referral_microservice"
 }
+
+# db_read_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "root",
+#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_NAME": "referral_microservice"
+# }
+
+# db_write_config = {
+#     "DB_HOST": "localhost",
+#     "DB_USER": "root",
+#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_NAME": "referral_microservice"
+# }
 
 # db_read_config = {
 #     "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
@@ -571,11 +572,6 @@ async def revokeReferral(request):
                 transactionIdList = []
                 for transactions in result:
                     transactionId = transactions.get('TRANSACTION_ID', '')
-                    print('||')
-                    print('| Revoke Referral |')
-                    print(transactionId)
-                    print('||')
-                    print('||')
                     inValidateTransactionResponse = revoke_credit(transactionId)
                     
                     if inValidateTransactionResponse.get('status', False):
@@ -595,6 +591,36 @@ async def revokeReferral(request):
 
     else:
         return json(create_response(message='UUID not provided'))
+
+@app.route("/upload/user_contact", methods=['POST'])
+async def uploadUserContact(request):
+    uuid = request.json.get('uuid', '')
+    deviceId = request.json.get('deviceId', '')
+    data = request.json.get('data', '')
+
+    dbRead = pymysql.connect(host=db_read_config["DB_HOST"], user=db_read_config["DB_USER"], password=db_read_config["DB_PASS"], db=db_read_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+    dbWrite = pymysql.connect(host=db_write_config["DB_HOST"], user=db_write_config["DB_USER"], password=db_write_config["DB_PASS"], db=db_write_config["DB_NAME"], charset='utf8mb4',cursorclass=pymysql.cursors.DictCursor)
+
+    if uuid:
+        if deviceId:
+            with dbWrite.cursor() as writeCursor:
+                for contact in data:
+                    id = contact.get('id',0)
+                    name = contact.get('name',0)
+                    emails = pyjson.dumps(contact.get('emails',0))
+                    phoneNumbers = pyjson.dumps(contact.get('phoneNumbers',0))
+
+                    sql = "INSERT IGNORE INTO `user_contacts` (user_id, unique_device_id, contact_id, contact_name, contact_phones, contact_emails) VALUES('{0}', '{1}', '{2}', '{3}', '{4}', '{5}')".format(uuid, deviceId, id, name, emails, phoneNumbers)
+                    writeCursor.execute(sql)
+            dbWrite.commit()
+
+            ret = {}
+            return json(create_response(True, ret))
+        else:
+            return json(create_response(message='deviceId not provided'))
+    else:
+        return json(create_response(message='UUID not provided'))
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, workers=10)
