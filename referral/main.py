@@ -652,6 +652,8 @@ async def uploadUserContact(request):
                         # print(m)
                         future = producer.send(KAFKA_TOPIC, pyjson.dumps(m).encode('utf-8'))
 
+                        producer.flush()
+
             ret = {}
             return json(create_response(True, ret))
         else:
