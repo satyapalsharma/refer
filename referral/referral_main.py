@@ -12,7 +12,7 @@ from kafka import KafkaProducer
 
 KAFKA_TOPIC = 'sms'
 # KAFKA_BROKERS = ['localhost:9092']
-KAFKA_BROKERS = ['localhost:9092']
+KAFKA_BROKERS = ['10.0.1.220:9092', '10.0.1.81:9092']
 
 # POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
