@@ -11,13 +11,14 @@ import re
 from kafka import KafkaProducer
 
 KAFKA_TOPIC = 'sms'
+# KAFKA_BROKERS = ['localhost:9092']
 KAFKA_BROKERS = ['localhost:9092']
 
 # POINTS_SERVICE_URL = 'http://13.127.243.15:8080'
 
-POINTS_SERVICE_URL = 'http://localhost:8070'
+# POINTS_SERVICE_URL = 'http://localhost:8070'
 
-# POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com:8020'
+POINTS_SERVICE_URL = 'http://internal-points-load-balancer-1148785792.ap-south-1.elb.amazonaws.com:8020'
 
 app = Sanic()
 
@@ -35,33 +36,33 @@ app = Sanic()
 #     "DB_NAME": "referral_microservice"
 # }
 
-db_read_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "root",
-    "DB_PASS": "3p7G(kyJ?yN)~22X",
-    "DB_NAME": "referral_microservice"
-}
-
-db_write_config = {
-    "DB_HOST": "localhost",
-    "DB_USER": "root",
-    "DB_PASS": "3p7G(kyJ?yN)~22X",
-    "DB_NAME": "referral_microservice"
-}
-
 # db_read_config = {
-#     "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
-#     "DB_USER": "refferral_read",
-#     "DB_PASS": "mSq6Tr9ZYNw6ryqB",
-#     "DB_NAME": "refferral_microservice"
+#     "DB_HOST": "localhost",
+#     "DB_USER": "root",
+#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_NAME": "referral_microservice"
 # }
 
 # db_write_config = {
-#     "DB_HOST": "fabuser-microservice.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
-#     "DB_USER": "refferral_write",
-#     "DB_PASS": "ushRtSTvEg5nytDJ",
-#     "DB_NAME": "refferral_microservice"
+#     "DB_HOST": "localhost",
+#     "DB_USER": "root",
+#     "DB_PASS": "3p7G(kyJ?yN)~22X",
+#     "DB_NAME": "referral_microservice"
 # }
+
+db_read_config = {
+    "DB_HOST": "fabuser-microservice-read.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
+    "DB_USER": "refferral_read",
+    "DB_PASS": "mSq6Tr9ZYNw6ryqB",
+    "DB_NAME": "refferral_microservice"
+}
+
+db_write_config = {
+    "DB_HOST": "fabuser-microservice.cwwl28odsw8p.ap-south-1.rds.amazonaws.com",
+    "DB_USER": "refferral_write",
+    "DB_PASS": "ushRtSTvEg5nytDJ",
+    "DB_NAME": "refferral_microservice"
+}
 
 TRANSACTION_TYPE = {
     "UNREALISEDCREDIT": 0,
@@ -669,4 +670,4 @@ async def uploadUserContact(request):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5005, workers=2)
+    app.run(host="0.0.0.0", port=5000, workers=10)
