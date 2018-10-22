@@ -638,6 +638,8 @@ async def uploadUserContact(request):
                 if phoneNumbers:
                     for number in phoneNumbers:
                         print(number)
+                        number = re.sub('[^0-9]','', number)
+                        print(number)
                         if number.find('+91') == 0:
                             number = number[3:]
                         print(number)
@@ -648,7 +650,7 @@ async def uploadUserContact(request):
 
                         if len(number) != 10:
                             continue
-                        number = re.sub('[^0-9]','', number)
+                        
                         m = {
                             'mobile': number,
                             'countryCode': '+91',
