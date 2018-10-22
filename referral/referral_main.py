@@ -654,7 +654,7 @@ async def uploadUserContact(request):
                         m = {
                             'mobile': number,
                             'countryCode': '+91',
-                            'text': "Hi! Get ₹{0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
+                            'text': "Hi! Get Rs. {0} off on your future bookings at 400+ FabHotels pan-India. Register using my referral code {1} or via this link fabhotels.com/invite/{1}".format(POINTS_PLAN_OBJECT['Instant Referral Discount']['points'], code),
                             # 'text': '<variable> off on your future bookings <variable> Register using <variable>',
                             'smsType': 'TEXT'
                         }
